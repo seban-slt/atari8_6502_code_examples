@@ -1,0 +1,500 @@
+; -------------------------------------------------------------------------------------------------------------------------------------------
+; Hi-Res PLOT routine example for narrow screen mode (256 x n)
+;
+; not so fast code, but easy to understand
+;
+; done by Seban/SLIGHT @ 2016.01.25
+; 
+; Public Domain
+;
+
+
+; zero page variables
+
+		org	$80
+ptr		org	*+2		; pointer (for screen memory addressing) 
+cnt1		org	*+3		; for stats (slow-plot pixel count)
+cnt2		org	*+3		; for stats (fast-plot pixel count)
+
+product		org	*+4		; data for dec32
+digits		org	*+5		; outp for dec32
+
+
+; main part
+
+		org 	$a000		; starting memory location
+
+scr		org	*+$1000		; screen memory (128 lines * 32 bytes)
+dl		org	*+$0100		; display list will be placed here (let's assume that the 256 bytes is enough)
+bit_lut		org	*+$0100		; bit lookup table
+xdv_lut		org	*+$0100		; /8 divide table
+adr_lo		org	*+$0100		; address LUT (low-bytes)
+adr_hi		org	*+$0100		; address LUT (hi-bytes)
+
+text		dta d'slow:__________  fast:__________'
+
+; code starts here
+	
+st		jsr	make_dl		; create DL
+		jsr	make_lut	; create bit lookup table
+		jsr	make_xdv	; create div table
+		jsr	make_adr	; create adr tables
+
+		jsr	cls		; clear screen memory (before setting the DL, so no garbage will be seen)
+		
+		ldx	<dl		; set new DL
+		ldy	>dl
+		stx	$230
+		sty	$231
+
+		lda	#$00		; set colback
+		sta	$2c8
+		
+		lda	#$0a		; set pixel luminance
+		sta	$2c5
+		
+		lda	#$82		; set background color
+		sta	$2c6
+
+		lda	#$21		; screen size -> narrow (32 bytes, 256 hi-res pixels)
+		sta	$22f
+
+		jsr	op		; wait for VBL (shadow registers will be copied into hardware registers)
+
+
+; the famous great plot-benchmark LOOP! ;)
+
+inf_loop	jsr	cls		; clear the screen
+		jsr	op		; wait for VBL
+
+		lda	#$00		; zero the A reg. :)
+		sta	$14		; clear RTCLOCK low-byte
+		sta	$13		; clear RTCLOCK mid-byte
+		
+		sta	cnt1+0		; clear the pixel counter for slow-plot
+		sta	cnt1+1
+		sta	cnt1+2
+
+; slow plot benchamark LOOP!
+
+splot_loop	lda	$d20a		; randomize Y pos.
+		and	#$7f		; keep the values below 128 (plot routine doesn't check the boundaries of Y position)
+		tay
+
+		ldx	$d20a		; randomize X pos. (0-255)
+		
+		jsr	plot		; do the PLOT!
+		
+		inc	cnt1+0
+		bne	cs0
+		inc	cnt1+1
+		bne	cs0
+		inc	cnt1+2
+cs0
+
+		lda	$13		; check the mid-byte od RTCLOCK
+		beq	splot_loop	; loop when zero!
+
+		lda	cnt1+0		; convect cnt1 to dec
+		sta	product+0
+		lda	cnt1+1
+		sta	product+1
+		lda	cnt1+2
+		sta	product+2
+		lda	#0
+		sta	product+3
+		jsr	to_dec32
+		
+		ldy	#$05		; print "slow plot" count
+
+; prepare the 2nd bechmark...
+
+		jsr	print_digits
+		
+		jsr	cls		; clear the screen
+		jsr	op		; wait for VBL
+
+		lda	#$00		; zero the A reg. :)
+		sta	$14		; clear RTCLOCK low-byte
+		sta	$13		; clear RTCLOCK mid-byte
+		sta	cnt2+0		; clear the pixel counter for slow-plot
+		sta	cnt2+1
+		sta	cnt2+2
+
+; fast plot benchamark LOOP!
+
+fplot_loop	lda	$d20a		; randomize Y pos.
+		and	#$7f		; keep the values below 128 (plot routine doesn't check the boundaries of Y position)
+		tay
+
+		ldx	$d20a		; randomize X pos. (0-255)
+		
+		jsr	lut_plot	; do the PLOT!
+		
+		inc	cnt2+0
+		bne	cs1
+		inc	cnt2+1
+		bne	cs1
+		inc	cnt2+2
+cs1
+
+		lda	$13		; check the mid-byte od RTCLOCK
+		beq	fplot_loop	; loop when zero!
+
+		lda	cnt2+0		; convect cnt1 to dec
+		sta	product+0
+		lda	cnt2+1
+		sta	product+1
+		lda	cnt2+2
+		sta	product+2
+		lda	#0
+		sta	product+3
+		jsr	to_dec32
+		
+		ldy	#22		; print "fast plot" count
+		jsr	print_digits
+
+		jmp	inf_loop	; do the infinity loop
+		
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; slow-plot procedure... 
+;
+; ... not so fast, but shows the theory and principles of operation
+;
+
+; the first step is to calculate the screen memory adress for Y coordinate		
+; so because one line have 32 bytes we must to simple adr=Y*32...
+; ... but the 6502 does not have the MUL instruction, so we use simple bit-shift
+;
+; (...) in the faster version we can of course use lookup for that too! (see the lut_plot)
+;
+; IN: X,Y - pixel position
+
+plot		lda	#$00
+		sta	ptr+1
+		sty	ptr
+		
+		asl	ptr		; *2
+		rol	ptr+1
+		
+		asl	ptr		; *4
+		rol	ptr+1
+
+		asl	ptr		; *8
+		rol	ptr+1
+
+		asl	ptr		; *16
+		rol	ptr+1
+
+		asl	ptr		; *32
+		rol	ptr+1
+
+; now we must add the screen memory address
+
+; this is the very slow way ;-)
+;
+;		clc
+;		lda	<scr
+;		adc	ptr
+;		sta	ptr
+;		lda	>scr
+;		adc	ptr+1
+;		sta	ptr+1
+
+; when the screen memory is aligned in sensible way (for example the 4k boundary)
+; we can use the simplest logic OR only on high byte of screen memory pointer
+
+		lda	>scr
+		ora	ptr+1
+		sta	ptr+1
+
+; next step can be to add the X pos /8 (because we have 8 pixels in one byte)
+; but we don't need to add anything, then we use the indirect addressing mode...
+; so the CPU do the addition for us! :) 
+; we need only to calculate the X/8 -> and for this we use simple bit shift also
+;
+; (...) and Yes! in the faster version we can of course use lookup for that too! (see the lut_plot)
+
+; the slow way...
+
+		txa			; taka the X position
+		lsr	@		; / 2
+		lsr	@		; / 4
+		lsr	@		; / 8
+		tay			; store in Y reg. -> needed by indirect adressing mode
+
+
+; next step is to convert tha X position to the bit value that we must set in byte
+; in C language this can be done by:
+;
+; pixel = (0x80 >> (X & 0x07) )
+; screen_memory|=pixel;
+;
+; ...but this is 8-bit CPU ... no time for that... so the logical and fast solution is lookup table (LUT)
+
+		lda	bit_lut,x	; get bit value from LUT
+		ora	(ptr),y		; do the OR with current screen value
+		sta	(ptr),y		; store it!
+		
+		rts			; that's it, all done! Pixel painted! :)
+
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; fast-plot procedure... 
+;
+; ... not so fast also, but shows what can be done using LUT's
+;
+; IN: X,Y - pixel position
+;
+
+
+lut_plot	lda	adr_lo,y	; get screen address from LUT (based on Y position)
+		sta	ptr
+		lda	adr_hi,y
+		sta	ptr+1
+
+		ldy	xdv_lut,x	; get the X-offset based on X position
+		lda	bit_lut,x	; get bit value from LUT
+		ora	(ptr),y		; do the OR with current screen value
+		sta	(ptr),y		; store it!
+		
+		rts			; that's it, all done! Pixel painted! :)
+
+
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; wait for vblank
+;
+
+op		lda	$14		; read the RTCLOCK low-byte
+		cmp	$14		; compare to itself (it will be inceremented on system VBI)
+		beq	*-2		; loop till equal!
+		rts
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; make screen offset address tables (used by lut-plot)
+;
+
+make_adr	ldx	<scr		; set the porinter to screen address
+		ldy	>scr
+		stx	ptr
+		sty	ptr+1
+
+		ldx	#$00		; clear the X reg.
+
+ad_loop		lda	ptr		; get lo-byte
+		sta	adr_lo,x	; store lo-byte
+		lda	ptr+1		; get hi-byte
+		sta	adr_hi,x	; store hi-byte
+		
+		clc			; add #32 (next line)
+		lda	#$20		
+		adc	ptr		; low byte
+		sta	ptr
+		bcc	*+4		; carry set?
+		inc	ptr+1		; yes! inc. hi-byte
+		
+		inx			; inc. loop counter
+		bne	ad_loop		; do the loop ;)
+		
+		rts
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; make X/8 divide table
+;
+
+make_xdv	ldx	#$00		; clear X reg.
+
+xloop		txa			; X -> A
+		lsr	@		; /2
+		lsr	@		; /4
+		lsr	@		; /8
+		sta	xdv_lut,x	; store!
+		inx			; inc. loop-counter
+		bne	xloop		; loop until X<>0
+		
+		rts			; done!
+
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; make bit lookup table
+;
+
+make_lut	ldx	#$00		; clear X reg., we will use it as index register
+		lda	#$80		; inital bit value
+		
+bloop		sta	bit_lut,x	; store it into table
+		lsr	@		; shift right
+		bcc	*+4		; check the carry flag, when set...
+		lda	#$80		; ...it's time to reload bit value
+	
+		inx			; inc. X reg (loop counter)
+		bne	bloop		; the the loop ultill all 256 bytes of table is not filled
+
+		rts
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; clear screen
+;
+; 
+; Warning! self-modifying code is used
+;
+
+cls		ldx	<scr		; set the screen memory address
+		ldy	>scr
+		stx	cloop+1
+		sty	cloop+2
+	
+		ldx	#$10		; size of the screen memory area in pages
+
+		ldy	#$00		; clear the Y reg.
+		tya			; and move the zero into A reg.
+
+cloop		sta	$cafe,y		; clear location
+		iny			; next 
+		bne	cloop		; page done?
+
+		inc	cloop+2		; next page
+		
+		dex			; decrement page counter
+		bne	cloop		; do the loop, when not zero!
+
+		rts			; done!
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; make Display List procedure
+;
+; Warning! self-modifying code is used
+;
+
+make_dl		ldx	<dl		; set the DL address
+		ldy	>dl
+		stx	put+1
+		sty	put+2
+		
+
+		ldx	#$06		; some empty lines
+		lda	#$70
+		jsr	put
+		
+		lda	#$4f		; hi-res with LMS
+		jsr	put
+		
+		lda	<scr		; lo-screen adr
+		jsr	put
+		lda	>scr		; hi-screen adr
+		jsr	put
+		
+		ldx	#$7f		; and add 127 ...
+		lda	#$0f		; ...hires lines
+		jsr	put
+		
+		lda	#$10		; two empty lines
+		jsr	put
+		lda	#$42		; hi-res text mode line with LMS
+		jsr	put
+		lda	<text		; info-line lo-byte adr.
+		jsr	put
+		lda	>text		; info-line hi-byte adr.
+		jsr	put
+				
+		lda	#$41		; JVB jump
+		jsr	put
+		
+		lda	<dl		; lo-DL adr
+		jsr	put
+		
+		lda	>dl		; hi-DL adr
+;		jsr	put		; (if the "put" proc is next, no need to jsr :P)
+
+put		sta	$dead
+		inw	put+1
+		dex
+		bne	put
+		inx
+		rts
+	
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; some useful procs for displaying the benchmark numbers :P
+;
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; print "digits" procedure on screen!
+;
+
+print_digits	ldx	#0
+pd0		lda	digits,x
+		jsr	put_hex
+		inx
+		cpx	#$05
+		bcc	pd0
+		rts
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; print hex procedure
+;
+
+put_hex		pha
+		lsr	@
+		lsr	@
+		lsr	@
+		lsr	@
+		jsr	to_hex
+		pla
+		and	#$0f
+to_hex		cmp 	#$0a
+		sed
+		adc 	#'0'-32
+		cld
+		sta	text,y
+		iny
+		rts
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+;
+; this proceudre converts the 32 bit hexadecimal value (product) into decimal value (digits)
+;
+; in : product (32 bit number)
+; out: digits  (5 bytes BCD coded)
+;
+
+to_dec32	ldx	#$04
+		lda	#$00
+bd2		sta	digits,x
+		dex
+		bpl	bd2
+
+		ldy	#31
+		sed				; do a binary to decimal conversion
+bd0		asl	product
+		rol	product+1
+		rol	product+2
+		rol	product+3
+
+		ldx	#4
+bd1		lda	digits,x
+		adc	digits,x
+		sta	digits,x
+		dex
+		bpl	bd1
+		dey
+		bpl	bd0
+		cld
+		rts
+
+; -------------------------------------------------------------------------------------------------------------------------------------------
+
+		run	st		; set RUN vector
+
+		end

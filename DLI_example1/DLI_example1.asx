@@ -1,0 +1,368 @@
+;----------------------------------------------------------------------------------------------------------------------------------------------
+;
+; Display List Interrupts - simple example
+;
+; done by Seban/Slight @ 2016.01.29
+;
+; Public Domain
+;
+
+; constants / defines
+
+alg4k		equ	$1000				; value used to algin to 4k boundary
+alg_p		equ	$0100				; value used to algin to page boundary
+
+asl_line	equ	pic_dat3+[17*40]		; from which line we start the bit-shifting
+
+; default luminances
+
+lum0		equ 4
+lum1		equ 6
+lum2		equ 8
+
+lum0a		equ 8
+lum1a		equ 10
+lum2a		equ 14
+
+; chrominances for each DLI routine
+
+chrom0		equ	$80
+chrom1		equ	$30
+chrom2		equ	$c0
+chrom3		equ	$50
+chrom4		equ	$e0
+chrom5		equ	$90
+
+; zero paga variables
+
+		org	$80
+dbg		org	*+1
+
+; x-asm config flags
+
+		opt	h+				; headers on
+
+		org	$2000				; program origin
+
+; now a few words about screen memory organization... 
+;
+; all of this tricks below is because ANTIC have only 12-bit (4Kbyte) display address counter,
+; so we need to keep all graphics data in boundary of 4k blocks...
+; and because the picture is rather huge (160x240)... we must divide it into three 4Kbyte blocks properly aligned (into 4k boundaries)
+
+pic_dat1	ins	'atari.g15',0,4080		; load first 102 lines of pic (102*40=4080)
+
+		org	[*/alg4k]*alg4k+alg4k		; do aligment to next 4k boundary
+pic_dat2	ins	'atari.g15',4080,4080		; load next 102 lines of pic (from line 102)
+
+		org	[*/alg4k]*alg4k+alg4k		; do aligment to next 4k boundary
+pic_dat3	ins	'atari.g15',8160
+
+		org	[*/alg_p]*alg_p+alg_p		; do aligment to next page boundary
+
+; display list
+
+dl		dta	$4e,a(pic_dat1)			; mode $0e with LMS of first chunk of data
+:101		dta	$0e				; and next 101 lines of mode $0e
+		
+		dta	$4e,a(pic_dat2)			; mode $0e with LMS of second chunk of data
+:101		dta	$0e				; and next 101 lines of mode $0e
+	
+		dta	$4e,a(pic_dat3)			; mode $0e with LMS of third chunk of data
+:37		dta	$0e				; and last 37 lines of mode $0e
+
+		dta	$41,a(dl)			; JVB to DL begining
+
+; default color table (for the first part od picture, before the first DLI)
+
+colt		dta	$84,$86,$88,$00,$00
+
+;----------------------------------------------------------------------------------------------------------------------------------------------
+;
+; Display List Interrupt (DLI) routines starts below
+;
+; in DLI routines we must operate on the hardware registers, so the effect of a write to register is immediate
+;
+
+; DLI #0
+
+dli0		pha					; save A register on stack
+
+		lda	#chrom1+lum0			; set the chroma & luma for colpf0 register
+		sta	$d016
+		lda	#chrom1+lum1			; set the chroma & luma for colpf1 register
+		sta	$d017
+		lda	#chrom1+lum2			; set the chroma & luma for colpf2 register
+		sta	$d018
+
+		lda	dbg				; check debug flag
+		bne	*+7
+		lda	#chrom1+$02			; if active change...
+		sta	$d01a				; the border colour
+
+		lda	<dli1				; set vector for next DLI
+		sta	$200
+		lda	>dli1
+		sta	$201
+
+		pla					; restore A register
+		rti					; return 
+; DLI #1
+
+dli1		pha					; save A register on stack
+
+		lda	#chrom2+lum0			; set the chroma & luma for colpf0 register
+		sta	$d016
+		lda	#chrom2+lum1			; set the chroma & luma for colpf1 register
+		sta	$d017
+		lda	#chrom2+lum2			; set the chroma & luma for colpf2 register
+		sta	$d018
+
+		lda	dbg				; check debug flag
+		bne	*+7
+		lda	#chrom2+$02			; if active change...
+		sta	$d01a				; the border colour
+
+		lda	<dli2				; set vector for next DLI
+		sta	$200
+		lda	>dli2
+		sta	$201
+
+		pla					; restore A register
+		rti					; return 
+
+; DLI #2
+
+dli2		pha					; save A register on stack
+
+		lda	#chrom3+lum0			; set the chroma & luma for colpf0 register
+		sta	$d016
+		lda	#chrom3+lum1			; set the chroma & luma for colpf1 register
+		sta	$d017
+		lda	#chrom3+lum2			; set the chroma & luma for colpf2 register
+		sta	$d018
+
+		lda	dbg				; check debug flag
+		bne	*+7
+		lda	#chrom3+$02			; if active change...
+		sta	$d01a				; the border colour
+
+		lda	<dli3				; set vector for next DLI
+		sta	$200
+		lda	>dli3
+		sta	$201
+
+		pla					; restore A register
+		rti					; return 
+
+; DLI #3
+
+dli3		pha					; save A register on stack
+
+		lda	#chrom4+lum0a			; set the chroma & luma for colpf0 register
+		sta	$d016
+		lda	#chrom4+lum1a			; set the chroma & luma for colpf1 register
+		sta	$d017
+		lda	#chrom4+lum2a			; set the chroma & luma for colpf2 register
+		sta	$d018
+
+		lda	dbg				; check debug flag
+		bne	*+7
+		lda	#chrom4+$02			; if active change...
+		sta	$d01a				; the border colour
+
+		lda	<dli4				; set vector for next DLI
+		sta	$200
+		lda	>dli4
+		sta	$201
+
+		pla					; restore A register
+		rti					; return 
+
+
+; DLI #4
+
+dli4		pha					; save A register on stack
+
+		lda	#chrom5+lum0			; set the chroma & luma for colpf0 register
+		sta	$d016
+		lda	#chrom5+lum1			; set the chroma & luma for colpf1 register
+		sta	$d017
+		lda	#chrom5+lum2			; set the chroma & luma for colpf2 register
+		sta	$d018
+
+		lda	dbg				; check debug flag
+		bne	*+7
+		lda	#chrom5+$02			; if active change...
+		sta	$d01a				; the border colour
+
+		lda	<dli5				; set vector for next DLI
+		sta	$200
+		lda	>dli5
+		sta	$201
+
+		pla					; restore A register
+		rti					; return 
+
+; DLI #5
+
+dli5		pha					; save A register on stack
+
+		lda	#lum0a				; set the chroma & luma for colpf0 register
+		sta	$d016
+		lda	#lum1a				; set the chroma & luma for colpf1 register
+		sta	$d017
+		lda	#lum2a				; set the chroma & luma for colpf2 register
+		sta	$d018
+
+		lda	dbg				; check debug flag
+		bne	*+7
+		lda	#$02				; if active change...
+		sta	$d01a				; the border colour
+
+		lda	<dli0				; set vector for next DLI
+		sta	$200
+		lda	>dli0
+		sta	$201
+
+		pla					; restore A register
+		rti					; return 
+
+
+;----------------------------------------------------------------------------------------------------------------------------------------------
+;
+; wait for VBL sub-routine
+
+op		lda	$14				; wait for v-sync
+		cmp	$14
+		beq	*-2
+		rts
+
+
+;----------------------------------------------------------------------------------------------------------------------------------------------
+;
+; code starts here
+
+st		lda	#$00				; turn off the screen
+		sta	$22f
+		jsr	op				; wait for VBL 
+
+		ldx	<dl				; set DL address
+		ldy	>dl	
+		stx	$230
+		sty	$231
+
+; set the default colors for the first part of screen (color shadow registers are moved to hardware registers on sys VBL routine)
+
+		ldx	#$04				; #of_color in palette
+c0		lda	colt,x				; load palette value into A
+		sta	$2c4,x				; store into color register (shadow)
+		dex					; decr. loop-counter
+		bpl	c0				; repeat until >0
+
+; and here we enable the DLI in specified lines of display list (when the bit #8 is set in DL instruction, Antic generates an NMI in the end of that line)
+;
+; normally this is done directly in the display-list, but here we modifing the display-list created earlier
+; ... this is because the contend of the picture can be changed and we can control the posions of DLI directly in code below...
+
+		lda	dl+40				; enable 1st DLI in DL
+		ora	#$80
+		sta	dl+40
+
+		lda	dl+70				; enable 2nd DLI in DL
+		ora	#$80
+		sta	dl+70
+
+		lda	dl+110				; enable 3rd DLI in DL
+		ora	#$80
+		sta	dl+110
+
+		lda	dl+145				; enable 4th DLI in DL
+		ora	#$80
+		sta	dl+145
+
+		lda	dl+180				; enable 4th DLI in DL
+		ora	#$80
+		sta	dl+180
+
+		lda	dl+220				; enable 4th DLI in DL
+		ora	#$80
+		sta	dl+220
+
+
+; here is time to set the vector of first DLI (remember that we are here synced with VBL, due to sync. with RTCLOCK.
+
+		ldx	<dli0				; set the DLI vector @ first DLI
+		ldy	>dli0
+		stx	$200
+		sty	$201
+		
+		lda	#$c0				; enable the VBL + DLI
+		sta	$d40e
+
+		lda	#$22				; turn on the DMA and screen (normal size, 40 bytes per line)
+		sta	$22f
+
+loop		jsr	op				; wait for v-sync
+
+		lsr	$4d				; turn off the OS-attract mode
+
+		lda	$d20f				; get the status...
+		and	#$08				; ...of SHIFT key
+		sta	dbg				; store it in debug flag (checked by DLI routines)
+		bne	*+7				; not set, jump!
+		lda	#chrom0				; change the...
+		sta	$d01a				; COLBACK register
+
+; let's do something hard (time consuming) to do for CPU...
+;
+; ... in this case, we can do some intensive bit-shift operations on screen memory             ...
+; ... the effect is some kind of scrolling, but this is not the way that srcollers are done    ...
+; ... in that way You can only achieve the high CPU utilization :D and in this case we need it ... 
+; ... to show that DLI work in all circumstances... 
+;
+; ... so let's do it in way that was done on M68000 and Atari ST! ;-) without any hardware scrolling ;D
+; 
+; code below take over half of the free raster-time.
+
+		lda	#2				; bit-shift repeat counter
+		
+l2		pha					; store A reg. on stack (needed later, b'cos this will be out loop counter)
+		
+		ldx	<asl_line			; load address of shifted line
+		ldy	>asl_line
+		stx	l0+1				; put direct into code below (yes! self modifying code)
+		sty	l0+2
+		stx	l1+1
+		sty	l1+2
+
+		ldy	#14				; #of_lines to shift
+lx		ldx	#39				; #of_bytes in line to shift
+
+l0		lda	asl_line			; get first byte of shifted line
+		asl	@				; and move first pixel into Carry bit
+l1		rol	asl_line,x			; do the shift!
+		dex					; decrement loop-counter (move to next byte to shift)
+		bpl	l1				; repeat until done (X>0)
+		
+		clc					; calculate the next line address, just add 40 to the screen memory pointer 
+		lda	#40				; #40
+		adc	l0+1				; add to lo-byte
+		sta	l0+1				; store (direct in code)
+		sta	l1+1				; store again in the second location
+		bcc	*+8				; skip is carry clear?
+		inc	l0+2				; carry was set to update the hi-byte
+		inc	l1+2				; ...update the second location also
+
+		dey					; decrement line counter
+		bpl	lx				; repeat until done! (Y>0)
+
+		pla					; restore A reg. from stack
+		lsr	@				; a little trick with bit-shifting loop :P
+		bne	l2				; repeat until done! (A!=0)
+
+		jmp	loop				; do the loop!
+
+		run	st				; set the RUN vector
+
+		end

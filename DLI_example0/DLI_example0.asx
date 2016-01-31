@@ -15,15 +15,15 @@
 		
 dl		dta	$70,$70,$70			; 3*7 of empty lines
 		dta	$80				; one emty line + DLI flag
-		dta	$47,a(text)			; ANTIC text mode $06 with load of address
+		dta	$47,a(text)			; ANTIC text mode $07 with load of address
 		dta	$80				; one emty line + DLI flag
-		dta	$07				; ANTIC text mode $06
+		dta	$07				; ANTIC text mode $07
 		dta	$80				; one emty line + DLI flag
-		dta	$07				; ANTIC text mode $06
+		dta	$07				; ANTIC text mode $07
 		dta	$80				; one emty line + DLI flag
-		dta	$07				; ANTIC text mode $06
+		dta	$07				; ANTIC text mode $07
 		dta	$80				; one emty line + DLI flag
-		dta	$07				; ANTIC text mode $06
+		dta	$07				; ANTIC text mode $07
 		dta	$41,a(dl)			; JVB jump to begining of DL
 		
 text		dta	d'   VECTORCON LABS   '

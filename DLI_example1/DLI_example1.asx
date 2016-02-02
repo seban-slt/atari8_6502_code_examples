@@ -7,7 +7,7 @@
 ; Public Domain
 ;
 
-		inc	'../common/mem_map.hea'
+		icl	'../common/mem_map.hea'
 
 ; constants / defines
 
@@ -44,7 +44,7 @@ dbg		org	*+1
 
 		opt	h+				; headers on
 
-		org	DLIPTRS0				; program origin
+		org	$2000				; program origin
 
 ; now a few words about screen memory organization... 
 ;

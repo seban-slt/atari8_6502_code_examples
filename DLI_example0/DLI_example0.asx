@@ -39,8 +39,8 @@ text		dta	d'   VECTORCON LABS   '
 
 st		ldx	<DL				; set the DL address
 		ldy	>DL
-		stx	DLIPTRS
-		sty	DLIPTRS+1
+		stx	DLPTRS
+		sty	DLPTRS+1
 		
 		lda	#$08				; set the default color (with DLI turned off)
 		sta	COLPF0S

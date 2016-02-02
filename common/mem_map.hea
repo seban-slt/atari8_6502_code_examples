@@ -36,6 +36,8 @@ DMACTLS = $022F ; SDMCTL
 DLPTRS  = $0230 ; SDLSTL
 ;         $0231 ; SDLSTH
 ;;;;;;; [real] ;;;;;;;;;;;;;
+VCOUNT  = $D40A ;        (R)
+WSYNC   = $D40A ;        (W)
 NMIEN   = $D40E ;        (W)
 
 ;;;;;;; POKEY ;;;;;;;;;;;;;;

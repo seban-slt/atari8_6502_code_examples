@@ -3,6 +3,12 @@
 ;  .:: :: ::.    (in XASM/MADS-like header format)
 ; .::' ::  '::.  © 2016 skrzyp
 
+; IMPORTANT NOTE
+; This memory man is (and will be) incomplete. 
+; It's meant to add required registers when needed to keep it simple,
+; because it's only used for educational purposes and not intended
+; to be used on production.
+
 ;;;;;;; ZEROPAGE ;;;;;;;;;;;
 RTCLOK  = $0012 ; 
 ;         $0013 ;

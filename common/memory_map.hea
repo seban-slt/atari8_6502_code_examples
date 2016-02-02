@@ -1,0 +1,38 @@
+;   :: :: ::     MEM_MAP.HEA
+;   :: :: ::     Atari XL/XE memory map.
+;  .:: :: ::.    (in XASM/MADS-like header format)
+; .::' ::  '::.  © 2016 skrzyp
+
+;;;;;;; ZEROPAGE ;;;;;;;;;;;
+RTCLOK  = $0012 ; 
+;         $0013 ;
+;         $0014 ;
+ATRACT  = $004D ;
+
+;;;;;;; GTIA ;;;;;;;;;;;;;;;
+;;;;;;; [shadows] ;;;;;;;;;;
+COLPF0S = $02C4 ; COLOR0
+COLPF1S = $02C5 ; COLOR1
+COLPF2S = $02C6 ; COLOR2
+COLPF3S = $02C7 ; COLOR3
+COLBAKS = $02C8 ; COLOR4
+;;;;;;; [real] ;;;;;;;;;;;;;
+COLPF0  = $D016 ;        (W)
+COLPF1  = $D017 ;        (W)
+COLPF2  = $D018 ;        (W)
+COLBAK  = $D01A ; COLBK  (W)
+
+;;;;;;; ANTIC ;;;;;;;;;;;;;;
+;;;;;;; [shadows] ;;;;;;;;;;
+DLIPTRS = $0200 ; VDSLST
+;         $0201 ;
+DMACTLS = $022F ; SDMCTL
+DLPTRS  = $0230 ; SDLSTL
+;         $0231 ; SDLSTH
+;;;;;;; [real] ;;;;;;;;;;;;;
+NMIEN   = $D40E ;        (W)
+
+;;;;;;; POKEY ;;;;;;;;;;;;;;
+;;;;;;; [real] ;;;;;;;;;;;;;
+RANDOM  = $D20A ;        (R)
+SKSTAT  = $D20F ;        (R)

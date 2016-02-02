@@ -8,7 +8,7 @@
 ; Public Domain
 ;
 
-		inc	'../common/memory_map.hea'
+		inc	'../common/mem_map.hea'
 
 ; zero page variables
 

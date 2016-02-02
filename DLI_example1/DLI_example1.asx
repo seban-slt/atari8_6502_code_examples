@@ -7,6 +7,8 @@
 ; Public Domain
 ;
 
+		inc	'../common/mem_map.hea'
+
 ; constants / defines
 
 alg4k		equ	$1000				; value used to algin to 4k boundary
@@ -42,7 +44,7 @@ dbg		org	*+1
 
 		opt	h+				; headers on
 
-		org	$2000				; program origin
+		org	DLIPTRS0				; program origin
 
 ; now a few words about screen memory organization... 
 ;
@@ -89,21 +91,21 @@ colt		dta	$84,$86,$88,$00,$00
 dli0		pha					; save A register on stack
 
 		lda	#chrom1+lum0			; set the chroma & luma for colpf0 register
-		sta	$d016
+		sta	COLPF0
 		lda	#chrom1+lum1			; set the chroma & luma for colpf1 register
-		sta	$d017
+		sta	COLPF1
 		lda	#chrom1+lum2			; set the chroma & luma for colpf2 register
-		sta	$d018
+		sta	COLPF2
 
 		lda	dbg				; check debug flag
 		bne	*+7
 		lda	#chrom1+$02			; if active change...
-		sta	$d01a				; the border colour
+		sta	COLBAK				; the border colour
 
 		lda	<dli1				; set vector for next DLI
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli1
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A register
 		rti					; return 
@@ -112,21 +114,21 @@ dli0		pha					; save A register on stack
 dli1		pha					; save A register on stack
 
 		lda	#chrom2+lum0			; set the chroma & luma for colpf0 register
-		sta	$d016
+		sta	COLPF0
 		lda	#chrom2+lum1			; set the chroma & luma for colpf1 register
-		sta	$d017
+		sta	COLPF1
 		lda	#chrom2+lum2			; set the chroma & luma for colpf2 register
-		sta	$d018
+		sta	COLPF2
 
 		lda	dbg				; check debug flag
 		bne	*+7
 		lda	#chrom2+$02			; if active change...
-		sta	$d01a				; the border colour
+		sta	COLBAK				; the border colour
 
 		lda	<dli2				; set vector for next DLI
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli2
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A register
 		rti					; return 
@@ -136,21 +138,21 @@ dli1		pha					; save A register on stack
 dli2		pha					; save A register on stack
 
 		lda	#chrom3+lum0			; set the chroma & luma for colpf0 register
-		sta	$d016
+		sta	COLPF0
 		lda	#chrom3+lum1			; set the chroma & luma for colpf1 register
-		sta	$d017
+		sta	COLPF1
 		lda	#chrom3+lum2			; set the chroma & luma for colpf2 register
-		sta	$d018
+		sta	COLPF2
 
 		lda	dbg				; check debug flag
 		bne	*+7
 		lda	#chrom3+$02			; if active change...
-		sta	$d01a				; the border colour
+		sta	COLBAK				; the border colour
 
 		lda	<dli3				; set vector for next DLI
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli3
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A register
 		rti					; return 
@@ -160,21 +162,21 @@ dli2		pha					; save A register on stack
 dli3		pha					; save A register on stack
 
 		lda	#chrom4+lum0a			; set the chroma & luma for colpf0 register
-		sta	$d016
+		sta	COLPF0
 		lda	#chrom4+lum1a			; set the chroma & luma for colpf1 register
-		sta	$d017
+		sta	COLPF1
 		lda	#chrom4+lum2a			; set the chroma & luma for colpf2 register
-		sta	$d018
+		sta	COLPF2
 
 		lda	dbg				; check debug flag
 		bne	*+7
 		lda	#chrom4+$02			; if active change...
-		sta	$d01a				; the border colour
+		sta	COLBAK				; the border colour
 
 		lda	<dli4				; set vector for next DLI
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli4
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A register
 		rti					; return 
@@ -185,21 +187,21 @@ dli3		pha					; save A register on stack
 dli4		pha					; save A register on stack
 
 		lda	#chrom5+lum0			; set the chroma & luma for colpf0 register
-		sta	$d016
+		sta	COLPF0
 		lda	#chrom5+lum1			; set the chroma & luma for colpf1 register
-		sta	$d017
+		sta	COLPF1
 		lda	#chrom5+lum2			; set the chroma & luma for colpf2 register
-		sta	$d018
+		sta	COLPF2
 
 		lda	dbg				; check debug flag
 		bne	*+7
 		lda	#chrom5+$02			; if active change...
-		sta	$d01a				; the border colour
+		sta	COLBAK				; the border colour
 
 		lda	<dli5				; set vector for next DLI
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli5
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A register
 		rti					; return 
@@ -209,21 +211,21 @@ dli4		pha					; save A register on stack
 dli5		pha					; save A register on stack
 
 		lda	#lum0a				; set the chroma & luma for colpf0 register
-		sta	$d016
+		sta	COLPF0
 		lda	#lum1a				; set the chroma & luma for colpf1 register
-		sta	$d017
+		sta	COLPF1
 		lda	#lum2a				; set the chroma & luma for colpf2 register
-		sta	$d018
+		sta	COLPF2
 
 		lda	dbg				; check debug flag
 		bne	*+7
 		lda	#$02				; if active change...
-		sta	$d01a				; the border colour
+		sta	COLBAK				; the border colour
 
 		lda	<dli0				; set vector for next DLI
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli0
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A register
 		rti					; return 
@@ -233,8 +235,8 @@ dli5		pha					; save A register on stack
 ;
 ; wait for VBL sub-routine
 
-op		lda	$14				; wait for v-sync
-		cmp	$14
+op		lda	RTCLOK+2				; wait for v-sync
+		cmp	RTCLOK+2
 		beq	*-2
 		rts
 
@@ -244,13 +246,13 @@ op		lda	$14				; wait for v-sync
 ; code starts here
 
 st		lda	#$00				; turn off the screen
-		sta	$22f
+		sta	DMACTLS
 		jsr	op				; wait for VBL 
 
 		ldx	<dl				; set DL address
 		ldy	>dl	
-		stx	$230
-		sty	$231
+		stx	DLPTRS
+		sty	DLPTRS+1
 
 ; set the default colors for the first part of screen (color shadow registers are moved to hardware registers on sys VBL routine)
 
@@ -294,25 +296,25 @@ c0		lda	colt,x				; load palette value into A
 
 		ldx	<dli0				; set the DLI vector @ first DLI
 		ldy	>dli0
-		stx	$200
-		sty	$201
+		stx	DLIPTRS
+		sty	DLIPTRS+1
 		
 		lda	#$c0				; enable the VBL + DLI
-		sta	$d40e
+		sta	NMIEN
 
 		lda	#$22				; turn on the DMA and screen (normal size, 40 bytes per line)
-		sta	$22f
+		sta	DMACTLS
 
 loop		jsr	op				; wait for v-sync
 
-		lsr	$4d				; turn off the OS-attract mode
+		lsr	ATRACT				; turn off the OS-attract mode
 
-		lda	$d20f				; get the status...
+		lda	SKSTAT				; get the status...
 		and	#$08				; ...of SHIFT key
 		sta	dbg				; store it in debug flag (checked by DLI routines)
 		bne	*+7				; not set, jump!
 		lda	#chrom0				; change the...
-		sta	$d01a				; COLBACK register
+		sta	COLBAK				; COLBACK register
 
 ; let's do something hard (time consuming) to do for CPU...
 ;

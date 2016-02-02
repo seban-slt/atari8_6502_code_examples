@@ -8,6 +8,7 @@
 ; Public Domain
 ;
 
+		inc	'../common/memory_map.hea'
 
 ; zero page variables
 
@@ -44,20 +45,20 @@ st		jsr	make_dl		; create DL
 		
 		ldx	<dl		; set new DL
 		ldy	>dl
-		stx	$230
-		sty	$231
+		stx	DLPTRS
+		sty	DLPTRS+1
 
 		lda	#$00		; set colback
-		sta	$2c8
+		sta	COLBAKS
 		
 		lda	#$0a		; set pixel luminance
-		sta	$2c5
+		sta	COLPF1S
 		
 		lda	#$82		; set background color
-		sta	$2c6
+		sta	COLPF2S
 
 		lda	#$21		; screen size -> narrow (32 bytes, 256 hi-res pixels)
-		sta	$22f
+		sta	DMACTLS
 
 		jsr	op		; wait for VBL (shadow registers will be copied into hardware registers)
 
@@ -68,8 +69,8 @@ inf_loop	jsr	cls		; clear the screen
 		jsr	op		; wait for VBL
 
 		lda	#$00		; zero the A reg. :)
-		sta	$14		; clear RTCLOCK low-byte
-		sta	$13		; clear RTCLOCK mid-byte
+		sta	RTCLOK+2		; clear RTCLOCK low-byte
+		sta	RTCLOK+1		; clear RTCLOCK mid-byte
 		
 		sta	cnt1+0		; clear the pixel counter for slow-plot
 		sta	cnt1+1
@@ -77,11 +78,11 @@ inf_loop	jsr	cls		; clear the screen
 
 ; slow plot benchamark LOOP!
 
-splot_loop	lda	$d20a		; randomize Y pos.
+splot_loop	lda	RANDOM		; randomize Y pos.
 		and	#$7f		; keep the values below 128 (plot routine doesn't check the boundaries of Y position)
 		tay
 
-		ldx	$d20a		; randomize X pos. (0-255)
+		ldx	RANDOM		; randomize X pos. (0-255)
 		
 		jsr	plot		; do the PLOT!
 		
@@ -92,7 +93,7 @@ splot_loop	lda	$d20a		; randomize Y pos.
 		inc	cnt1+2
 cs0
 
-		lda	$13		; check the mid-byte od RTCLOCK
+		lda	RTCLOK+1		; check the mid-byte od RTCLOCK
 		beq	splot_loop	; loop when zero!
 
 		lda	cnt1+0		; convect cnt1 to dec
@@ -115,19 +116,19 @@ cs0
 		jsr	op		; wait for VBL
 
 		lda	#$00		; zero the A reg. :)
-		sta	$14		; clear RTCLOCK low-byte
-		sta	$13		; clear RTCLOCK mid-byte
+		sta	RTCLOK+2		; clear RTCLOCK low-byte
+		sta	RTCLOK+1		; clear RTCLOCK mid-byte
 		sta	cnt2+0		; clear the pixel counter for slow-plot
 		sta	cnt2+1
 		sta	cnt2+2
 
 ; fast plot benchamark LOOP!
 
-fplot_loop	lda	$d20a		; randomize Y pos.
+fplot_loop	lda	RANDOM		; randomize Y pos.
 		and	#$7f		; keep the values below 128 (plot routine doesn't check the boundaries of Y position)
 		tay
 
-		ldx	$d20a		; randomize X pos. (0-255)
+		ldx	RANDOM		; randomize X pos. (0-255)
 		
 		jsr	lut_plot	; do the PLOT!
 		
@@ -138,7 +139,7 @@ fplot_loop	lda	$d20a		; randomize Y pos.
 		inc	cnt2+2
 cs1
 
-		lda	$13		; check the mid-byte od RTCLOCK
+		lda	RTCLOK+1		; check the mid-byte od RTCLOCK
 		beq	fplot_loop	; loop when zero!
 
 		lda	cnt2+0		; convect cnt1 to dec
@@ -270,8 +271,8 @@ lut_plot	lda	adr_lo,y	; get screen address from LUT (based on Y position)
 ; wait for vblank
 ;
 
-op		lda	$14		; read the RTCLOCK low-byte
-		cmp	$14		; compare to itself (it will be inceremented on system VBI)
+op		lda	RTCLOK+2		; read the RTCLOCK low-byte
+		cmp	RTCLOK+2		; compare to itself (it will be inceremented on system VBI)
 		beq	*-2		; loop till equal!
 		rts
 

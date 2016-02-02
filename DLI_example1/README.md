@@ -8,4 +8,5 @@ The example shows the "daisy chaining" of DLI routines, at end of each routine t
 
 TO DO:
 
-- change the addresses of registers to their names (sorry, but I remember the addresses of each hardware register directly, so I don't bother to remember their names).
+- [x] ~~change the addresses of registers to their names (sorry, but I remember the addresses of each hardware register directly, so I don't bother to remember their names)~~ mostly done by @skrzyp, needs review from @seban-slt.
+

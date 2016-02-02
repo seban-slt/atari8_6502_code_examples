@@ -4,4 +4,5 @@ Source contains two procedures... one is the slow version, but this shows the pr
 
 TO DO:
 
-- change the addresses of registers to their names (sorry, but I remember the addresses of each hardware register directly, so I don't bother to remember their names).
+- [x] ~~change the addresses of registers to their names (sorry, but I remember the addresses of each hardware register directly, so I don't bother to remember their names)~~ mostly done by @skrzyp, needs review from @seban-slt.
+

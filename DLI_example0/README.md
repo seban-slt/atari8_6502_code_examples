@@ -3,4 +3,4 @@ This piece of code show how to use DLI interrupts in text modes, to change the c
 
 TO DO:
 
-- change the addresses of registers to their names (sorry, but I remember the addresses of each hardware register directly, so I don't bother to remember their names).
+- [x] ~~change the addresses of registers to their names (sorry, but I remember the addresses of each hardware register directly, so I don't bother to remember their names)~~ mostly done by @skrzyp, needs review from @seban-slt.

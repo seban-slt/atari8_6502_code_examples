@@ -7,6 +7,8 @@
 ; Public Domain
 ;
 
+		icl	'../common/mem_map.hea'
+
 		opt	h+				; Atari file headers on (dos binary format)
 		
 		org	$a000				; program/code will be located at this address
@@ -37,32 +39,32 @@ text		dta	d'   VECTORCON LABS   '
 
 st		ldx	<DL				; set the DL address
 		ldy	>DL
-		stx	$230
-		sty	$231
+		stx	DLIPTRS
+		sty	DLIPTRS+1
 		
 		lda	#$08				; set the default color (with DLI turned off)
-		sta	$2c4
+		sta	COLPF0S
 	
 		ldx	<dli0
 		ldy	>dli0				; set the DLI vector to the first DLI routine
-		stx	$200
-		sty	$201
+		stx	DLIPTRS
+		sty	DLIPTRS+1
 		
 ; here we have turn off the DLI when shift key is pressed		
 
-loop		lda	$14				; wait for VBL
-		cmp	$14
+loop		lda	RTCLOK+2				; wait for VBL
+		cmp	RTCLOK+2
 		beq	*-2
 
 		ldx	#$c0				; VBL + DLI
 		
-		lda	$d20f				; read the keys status
+		lda	SKSTAT				; read the keys status
 		and	#$08				; keep only the SHIFT key status
 		bne	no_shift
 		
 		ldx	#$40				; only VBL
 
-no_shift	stx	$d40e				; set the NMI status
+no_shift	stx	NMIEN				; set the NMI status
 
 		jmp	loop
 
@@ -73,12 +75,12 @@ no_shift	stx	$d40e				; set the NMI status
 dli0		pha					; store the A reg. on stack
 
 		lda	#$88				; set the colour in the hardware register
-		sta	$d016
+		sta	COLPF0
 		
 		lda	<dli1				; set the DLI vector to the next DLI routine
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli1
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A reg. from stack
 		rti
@@ -86,12 +88,12 @@ dli0		pha					; store the A reg. on stack
 dli1		pha					; store the A reg. on stack
 
 		lda	#$38				; set the colour in the hardware register
-		sta	$d016
+		sta	COLPF0
 		
 		lda	<dli2				; set the DLI vector to the next DLI routine
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli2
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A reg. from stack
 		rti
@@ -99,12 +101,12 @@ dli1		pha					; store the A reg. on stack
 dli2		pha					; store the A reg. on stack
 
 		lda	#$A8				; set the colour in the hardware register
-		sta	$d016
+		sta	COLPF0
 		
 		lda	<dli3				; set the DLI vector to the next DLI routine
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli3
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A reg. from stack
 		rti
@@ -112,12 +114,12 @@ dli2		pha					; store the A reg. on stack
 dli3		pha					; store the A reg. on stack
 
 		lda	#$58				; set the colour in the hardware register
-		sta	$d016
+		sta	COLPF0
 		
 		lda	<dli4				; set the DLI vector to the next DLI routine
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli4
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore A reg. from stack
 		rti
@@ -129,20 +131,20 @@ dli4		pha					; store the A reg. on stack
 		
 
 ; and here we do a some simple raster-bar, using the loop-counter as a luminance value, 
-; and the $d40a (wsync) as a wait-for next line delay
+; and the WSYNC (wsync) as a wait-for next line delay
 
 
 		ldx	#$00				; X will be loop counter, and the value written to the color register
-d4l		stx	$d40a				; wait for h-sync
-		stx	$d016				; write X to the color register
+d4l		stx	WSYNC				; wait for h-sync
+		stx	COLPF0				; write X to the color register
 		inx					; increment loop counter
 		cpx	#$10				; end of loop? (compare X with $10)
 		bcc	d4l				; jump when carry clear (reg. X < $10)
 
 		lda	<dli0				; set the DLI vector to the first DLI routine
-		sta	$200
+		sta	DLIPTRS
 		lda	>dli0
-		sta	$201
+		sta	DLIPTRS+1
 
 		pla					; restore X reg. from stack
 		tax
